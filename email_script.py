@@ -111,26 +111,30 @@ def search_serper(search_query: str) -> List[Dict[str, Any]]:
     })
 
     headers = {
-        'X-API-KEY': os.getenv("SERPER_API_KEY"),
-        'Content-Type': 'application/json'
+        "X-API-KEY": os.getenv("SERPER_API_KEY"),
+        "Content-Type": "application/json",
     }
 
     response = requests.post(url, headers=headers, data=payload)
     results = response.json()
-    if 'organic' not in results:
-        raise ValueError(f"No organic results found in results {results} for search query {search_query}")
-    results_list = results['organic']
+    if "organic" not in results:
+        raise ValueError(
+            f"No organic results found in results {results} for search query {search_query}"
+        )
+    results_list = results["organic"]
 
     return [
         {
-            'title': result['title'],
-            'link': result['link'],
-            'snippet': result['snippet'],
-            'search_term': search_query,
-            'id': idx
+            "title": result.get("title", ""),
+            "link": result.get("link", ""),
+            "snippet": result.get("snippet", ""),
+            "search_term": search_query,
+            "id": idx,
         }
         for idx, result in enumerate(results_list, 1)
+        if result.get("link")
     ]
+
 
 
 
