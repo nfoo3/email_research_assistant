@@ -16,16 +16,23 @@ You will be given a list of search results, and you will need to determine which
 
 # Example of what is relevant 
 
-
-- Agentic AI updates from the large AI players:
--- OpenAI
--- Meta
--- Perplexity
--- Gemini
--- Mistral
--- Cursor
-- How people are using agents in industry, from LinkedIn, Twitter, etc.
-- News articles about AI agents.
+- Predictive turnover modeling
+- Internal mobility analytics
+- Skills-based workforce planning
+- Workforce productivity measurement
+- Employee engagement analytics
+- Employee measurement analytics
+- Performance prediction models
+- AI in recruiting decision-making
+- Compensation modeling
+- Organizational network analysis
+- News articles about statistics
+- Validation studies of hiring algorithms
+- Psychometrics in workforce analytics
+- Explainability in HR AI
+- Causal inference in HR data
+- Ethical AI in talent selection
+- Bias auditing frameworks
 
 # Example of what is not relevant 
 
