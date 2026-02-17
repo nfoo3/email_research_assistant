@@ -27,11 +27,23 @@ from sib_api_v3_sdk.rest import ApiException
 
 # Configuration
 SEARCH_TERMS = [
-    "Agentic AI",
-    "OpenAI LinkedIn",
-    "Perplexity LinkedIn",
-    "Meta AI LinkedIn",
-    "Anthropic LinkedIn"
+"Predictive turnover modeling",
+"Internal mobility analytics",
+"Skills-based workforce planning",
+"Workforce productivity measurement",
+"Employee engagement analytics",
+"Employee measurement analytics",
+"Performance prediction models",
+"AI in recruiting decision-making",
+"Compensation modeling",
+"Organizational network analysis",
+"News articles about statistics",
+"Validation studies of hiring algorithms",
+"Psychometrics in workforce analytics",
+"Explainability in HR AI",
+"Causal inference in HR data",
+"Ethical AI in talent selection",
+"Bias auditing frameworks"
 ]
 
 required_environment_variables = [
