@@ -90,7 +90,6 @@ class ReviewerOutput(BaseModel):
     approved: bool = Field(description="Whether the summary is approved")
     message: str = Field(description="Feedback message from the reviewer")
 
-
 def search_serper(search_query: str) -> List[Dict[str, Any]]:
     """
     Search Google using the Serper API.
@@ -117,26 +116,30 @@ def search_serper(search_query: str) -> List[Dict[str, Any]]:
 
     response = requests.post(url, headers=headers, data=payload)
     results = response.json()
+
     if "organic" not in results:
         raise ValueError(
             f"No organic results found in results {results} for search query {search_query}"
         )
+
     results_list = results["organic"]
 
-    return [
-        {
+    cleaned_results: List[Dict[str, Any]] = []
+    for idx, result in enumerate(results_list, 1):
+        # Skip any result that doesn't even have a link
+        link = result.get("link")
+        if not link:
+            continue
+
+        cleaned_results.append({
             "title": result.get("title", ""),
-            "link": result.get("link", ""),
-            "snippet": result.get("snippet", ""),
+            "link": link,
+            "snippet": result.get("snippet", ""),  # use empty string if missing
             "search_term": search_query,
             "id": idx,
-        }
-        for idx, result in enumerate(results_list, 1)
-        if result.get("link")
-    ]
+        })
 
-
-
+    return cleaned_results
 
 def load_prompt(prompt_name: str) -> str:
     """Load a prompt template from file."""
