@@ -54,10 +54,10 @@ required_environment_variables = [
 ]
 
 def validate_environment_variables():
-    """Validate environment variables."""
-    for var in required_environment_variables:
-        if os.getenv(var) is None:
-            raise ValueError(f"Environment variable {var} is not set")
+    """Validate environment variables and fail fast if any are missing."""
+    missing = [var for var in required_environment_variables if not os.getenv(var)]
+    if missing:
+        raise RuntimeError(f"Missing environment variables: {', '.join(missing)}")
 
 class ResultRelevance(BaseModel):
     """Model for storing relevance check results."""
@@ -114,7 +114,7 @@ def search_serper(search_query: str) -> List[Dict[str, Any]]:
         "Content-Type": "application/json",
     }
 
-    response = requests.post(url, headers=headers, data=payload)
+    response = requests.post(url, headers=headers, data=payload, timeout=30)
     results = response.json()
 
     if "organic" not in results:
@@ -357,33 +357,46 @@ def send_email(email_content: str):
 
 def main():
     """Main execution flow."""
+    print("🚀 Email script starting")
+
+    # 1. Environment check
     try:
         validate_environment_variables()
-    except ValueError as e:
-        with open(".env", "w") as f:
-            # Load environment variables from .env file
-            for line in f:
-                if '=' in line:
-                    key, value = line.strip().split('=', 1)
-                    os.environ[key] = value
-        print("Loaded environment variables from .env file")
-    
-    # Search and filter results
+        print("✅ All required environment variables are set")
+    except RuntimeError as e:
+        print(f"❌ {e}")
+        # Fail fast so Render marks this as a failure instead of hanging forever
+        return
+
+    # 2. Search and filter results
+    print("🔍 Running searches and relevance checks...")
     relevant_results = []
-    for search_term in SEARCH_TERMS:
+    for idx, search_term in enumerate(SEARCH_TERMS, start=1):
+        print(f"   → [{idx}/{len(SEARCH_TERMS)}] Searching: {search_term!r}")
         results = search_serper(search_term)
+        print(f"     Found {len(results)} raw results, checking relevance...")
         filtered_results = check_search_relevance(results)
         relevant_ids = [r.id for r in filtered_results.relevant_results]
-        filtered_results = [r for r in results if str(r['id']) in relevant_ids]
+        filtered_results = [r for r in results if str(r["id"]) in relevant_ids]
+        print(f"     Kept {len(filtered_results)} relevant results")
         relevant_results.extend(filtered_results)
-    
-    # Process content
-    markdown_contents = scrape_and_save_markdown(relevant_results)
-    summaries = generate_summaries(markdown_contents)
 
-    # Set up LLM workflow
+    print(f"✅ Total relevant results across all queries: {len(relevant_results)}")
+
+    # 3. Scrape content
+    print("🕸️ Scraping relevant pages...")
+    markdown_contents = scrape_and_save_markdown(relevant_results)
+    print(f"✅ Scraped and converted {len(markdown_contents)} pages to markdown")
+
+    # 4. Summarise pages
+    print("🧠 Generating individual page summaries with gpt-4o...")
+    summaries = generate_summaries(markdown_contents)
+    print(f"✅ Generated {len(summaries)} summaries")
+
+    # 5. Set up LLM workflow for final email
+    print("🧩 Building summariser/reviewer workflow...")
     llm = ChatOpenAI(model="gpt-4o")
-    
+
     with open("email_template.md", "r") as f:
         email_template = f.read()
 
@@ -401,19 +414,23 @@ def main():
     llm_summariser = summariser_prompt | llm.with_structured_output(SummariserOutput)
     llm_reviewer = reviewer_prompt | llm.with_structured_output(ReviewerOutput)
 
-    # Configure and run graph
+    # 6. Configure and run graph
+    print("🔄 Running LangGraph workflow (summariser ↔ reviewer)...")
     graph_builder = StateGraph(State)
     graph_builder.add_node("summariser", summariser)
     graph_builder.add_node("reviewer", reviewer)
     graph_builder.add_edge(START, "summariser")
     graph_builder.add_edge("summariser", "reviewer")
-    graph_builder.add_conditional_edges('reviewer', conditional_edge)
+    graph_builder.add_conditional_edges("reviewer", conditional_edge)
 
     graph = graph_builder.compile()
     output = graph.invoke({"summaries": summaries, "email_template": email_template})
 
-    # Send final email
+    # 7. Send final email
+    print("📧 Sending final email...")
     send_email(output["created_summaries"][-1])
+
+    print("✅ Email script completed successfully")
 
 
 if __name__ == "__main__":
